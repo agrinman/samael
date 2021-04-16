@@ -60,13 +60,19 @@ fn test_signed_response() {
     }).collect::<Vec<ResponseAttribute>>();
 
     // create and sign a response
-    let out_response = idp.sign_authn_response(idp_cert.as_slice(),
-                                               "testuser@example.com",
-                                               "https://sp.example.com/audience",
-                                               "https://sp.example.com/acs",
-                                               "https://idp.example.com",
-                                               &verified.id.as_str(),
-                                               &attrs).expect("failed to created and sign response");
+    let params = ResponseParams {
+        idp_x509_cert_der: idp_cert.as_slice(),
+        subject_name_id: "testuser@example.com",
+        audience: "https://sp.example.com/audience",
+        acs_url: "https://sp.example.com/acs",
+        issuer: "https://idp.example.com",
+        in_response_to_id: &verified.id.as_str(),
+        attributes: &attrs,
+        not_before: None,
+        not_on_or_after: Some(Utc::now()),
+    };
+
+    let out_response = idp.sign_authn_response(&params).expect("failed to created and sign response");
 
     let out_xml = out_response.to_xml().expect("failed to serialize response xml");
     verify_signed_xml(out_xml.as_bytes(), idp_cert.as_slice(), Some("ID")).expect("verification failed");
